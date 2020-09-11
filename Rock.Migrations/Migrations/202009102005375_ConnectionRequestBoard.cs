@@ -16,13 +16,10 @@
 //
 namespace Rock.Migrations
 {
-    using System;
-    using System.Data.Entity.Migrations;
-
     /// <summary>
     ///
     /// </summary>
-    public partial class ConnectionRequestBoard : Rock.Migrations.RockMigration
+    public partial class ConnectionRequestBoard : RockMigration
     {
         /// <summary>
         /// Operations to be performed during the upgrade process.
@@ -66,6 +63,10 @@ namespace Rock.Migrations
             // Add Page Connections to Site:Rock RMS
             RockMigrationHelper.AddPage( true, "48242949-944A-4651-B6CC-60194EDE08A0", "D65F783D-87A9-4CC9-8110-E83466A0EADB", "Connections", "", SystemGuid.Page.CONNECTIONS_BOARD, "" );
             RockMigrationHelper.MovePage( SystemGuid.Page.CONNECTIONS, SystemGuid.Page.CONNECTIONS_BOARD );
+            // Add/Update BlockType Connection Request Board
+            RockMigrationHelper.UpdateBlockType("Connection Request Board","Display the Connection Requests for a selected Connection Opportunity as a list or board view.","~/Blocks//Connection/ConnectionRequestBoard.ascx","Connection","28DBE708-E99B-4879-A64D-656C030D25B5");
+            // Add Block Connection Request Board to Page: Connections, Site: Rock RMS
+            RockMigrationHelper.AddBlock( true, "4FBCEB52-8892-4035-BDEA-112A494BE81F".AsGuid(),null,"C2D29296-6A87-47A9-A753-EE4E9159C4C4".AsGuid(),"28DBE708-E99B-4879-A64D-656C030D25B5".AsGuid(), "Connection Request Board","Main",@"",@"",0,"7908EAD6-832B-4E38-9EDA-5FC40115DA0E");   
         }
 
         /// <summary>
@@ -73,6 +74,8 @@ namespace Rock.Migrations
         /// </summary>
         private void CmsChangesDown()
         {
+            // Delete BlockType Connection Request Board
+            RockMigrationHelper.DeleteBlockType("28DBE708-E99B-4879-A64D-656C030D25B5"); // Connection Request Board  
             RockMigrationHelper.MovePage( SystemGuid.Page.CONNECTIONS, SystemGuid.Page.ENGAGEMENT );
             // Delete Page Connections from Site:Rock RMS
             RockMigrationHelper.DeletePage( Rock.SystemGuid.Page.CONNECTIONS_BOARD ); //  Page: Connections, Layout: Full Width, Site: Rock RMS  
