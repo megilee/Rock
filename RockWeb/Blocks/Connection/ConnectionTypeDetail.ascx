@@ -121,8 +121,9 @@
 
                     <Rock:PanelWidget ID="wpStatuses" runat="server" Title="Statuses">
                         <div class="grid">
-                            <Rock:Grid ID="gStatuses" runat="server" AllowPaging="false" DisplayType="Light" RowItemText="Status" ShowConfirmDeleteDialog="false" >
+                            <Rock:Grid ID="gStatuses" runat="server" AllowPaging="false" DisplayType="Light" RowItemText="Status" ShowConfirmDeleteDialog="false" OnGridReorder="gStatuses_GridReorder" >
                                 <Columns>
+                                    <Rock:ReorderField />
                                     <Rock:RockBoundField DataField="Name" HeaderText="Name" />
                                     <Rock:RockBoundField DataField="Description" HeaderText="Description" />
                                     <Rock:BoolField DataField="IsDefault" HeaderText="Is Default" />

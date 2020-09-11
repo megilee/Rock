@@ -214,7 +214,7 @@ namespace Rock.Web.Cache
         public bool EnableHistory { get; private set; }
 
         /// <summary>
-        /// Gets or sets any HTML to be rendered before the attribute's edit control 
+        /// Gets or sets any HTML to be rendered before the attribute's edit control
         /// </summary>
         /// <value>
         /// The pre HTML.
@@ -223,7 +223,7 @@ namespace Rock.Web.Cache
         public string PreHtml { get; private set; }
 
         /// <summary>
-        /// Gets or sets any HTML to be rendered after the attribute's edit control 
+        /// Gets or sets any HTML to be rendered after the attribute's edit control
         /// </summary>
         /// <value>
         /// The post HTML.
@@ -534,7 +534,7 @@ namespace Rock.Web.Cache
                     controls.Add( new Literal { Text = this.PreHtml } );
                 }
             }
-            
+
             if ( rockControl != null )
             {
                 rockControl.Label = options.LabelText;
@@ -647,6 +647,53 @@ namespace Rock.Web.Cache
         #endregion
 
         #region Static Methods
+
+        /// <summary>
+        /// Gets a collection of <see cref="Rock.Model.Attribute">Attributes</see> by <see cref="Rock.Model.EntityType"/>, EntityQualifierColumn and EntityQualifierValue.
+        /// </summary>
+        /// <param name="entityTypeId">The entity type identifier.</param>
+        /// <param name="entityQualifierColumn">The entity qualifier column.</param>
+        /// <param name="entityQualifierValue">The entity qualifier value.</param>
+        /// <param name="includeInactive">if set to <c>true</c> [include inactive].</param>
+        /// <returns></returns>
+        public static List<AttributeCache> GetByEntityTypeQualifier( int? entityTypeId, string entityQualifierColumn, string entityQualifierValue, bool includeInactive )
+        {
+            var query = All();
+
+            if ( entityTypeId.HasValue && entityTypeId != 0 )
+            {
+                query = query.Where( t => t.EntityTypeId == entityTypeId ).ToList();
+            }
+            else
+            {
+                query = query.Where( t => !t.EntityTypeId.HasValue ).ToList();
+            }
+
+            if ( string.IsNullOrWhiteSpace( entityQualifierColumn ) )
+            {
+                query = query.Where( t => t.EntityTypeQualifierColumn == null || t.EntityTypeQualifierColumn == string.Empty ).ToList();
+            }
+            else
+            {
+                query = query.Where( t => t.EntityTypeQualifierColumn == entityQualifierColumn ).ToList();
+            }
+
+            if ( string.IsNullOrWhiteSpace( entityQualifierValue ) )
+            {
+                query = query.Where( t => t.EntityTypeQualifierValue == null || t.EntityTypeQualifierValue == string.Empty ).ToList();
+            }
+            else
+            {
+                query = query.Where( t => t.EntityTypeQualifierValue == entityQualifierValue ).ToList();
+            }
+
+            if ( !includeInactive )
+            {
+                query = query.Where( a => a.IsActive == true ).ToList();
+            }
+
+            return query;
+        }
 
         /// <summary>
         /// Gets the specified entity.

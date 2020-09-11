@@ -34,7 +34,7 @@ namespace Rock.Model
     [RockDomain( "Connection" )]
     [Table( "ConnectionOpportunity" )]
     [DataContract]
-    public partial class ConnectionOpportunity : Model<ConnectionOpportunity>, IHasActiveFlag
+    public partial class ConnectionOpportunity : Model<ConnectionOpportunity>, IHasActiveFlag, IOrdered
     {
 
         #region Entity Properties
@@ -115,12 +115,16 @@ namespace Rock.Model
         /// </value>
         [Required]
         [DataMember]
-        public bool IsActive
-        {
-            get { return _isActive; }
-            set { _isActive = value; }
-        }
-        private bool _isActive = true;
+        public bool IsActive { get; set; }
+
+        /// <summary>
+        /// Gets or sets the order.
+        /// </summary>
+        /// <value>
+        /// The order.
+        /// </value>
+        [DataMember]
+        public int Order { get; set; }
 
         #endregion
 

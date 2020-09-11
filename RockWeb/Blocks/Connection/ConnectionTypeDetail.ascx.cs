@@ -1029,6 +1029,29 @@ namespace RockWeb.Blocks.Connection
         #region ConnectionStatus Events
 
         /// <summary>
+        /// Handles the GridReorder event of the gStatuses control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="GridReorderEventArgs"/> instance containing the event data.</param>
+        protected void gStatuses_GridReorder( object sender, GridReorderEventArgs e )
+        {
+            var movedItem = StatusesState.ElementAtOrDefault( e.OldIndex );
+
+            if ( movedItem != null )
+            {
+                StatusesState.RemoveAt( e.OldIndex );
+                StatusesState.Insert( e.NewIndex, movedItem );
+
+                for ( var i = 0; i < StatusesState.Count; i++ )
+                {
+                    StatusesState[i].Order = i;
+                }
+            }
+
+            BindConnectionStatusesGrid();
+        }
+
+        /// <summary>
         /// Handles the Delete event of the gStatuses control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
@@ -1155,8 +1178,7 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private void BindConnectionStatusesGrid()
         {
-            SetConnectionStatusListOrder( StatusesState );
-            gStatuses.DataSource = StatusesState.OrderBy( a => a.AutoInactivateState ).ThenBy( a => a.Name ).ToList();
+            gStatuses.DataSource = StatusesState.ToList();
             gStatuses.DataBind();
         }
 
@@ -1179,22 +1201,6 @@ namespace RockWeb.Blocks.Connection
         {
             int order = 0;
             itemList.OrderBy( a => a.Order ).ToList().ForEach( a => a.Order = order++ );
-        }
-
-
-        /// <summary>
-        /// Sets the attribute list order.
-        /// </summary>
-        /// <param name="attributeList">The attribute list.</param>
-        private void SetConnectionStatusListOrder( List<ConnectionStatus> connectionStatusList )
-        {
-            if ( connectionStatusList != null )
-            {
-                if ( connectionStatusList.Any() )
-                {
-                    connectionStatusList.OrderBy( a => a.AutoInactivateState ).ThenBy( a => a.Name ).ToList();
-                }
-            }
         }
 
         #endregion
@@ -1574,7 +1580,12 @@ namespace RockWeb.Blocks.Connection
 
             ActivityTypesState = connectionType.ConnectionActivityTypes.ToList();
             WorkflowsState = connectionType.ConnectionWorkflows.ToList();
-            StatusesState = connectionType.ConnectionStatuses.ToList();
+            StatusesState = connectionType.ConnectionStatuses.OrderBy( cs => cs.Order ).ThenBy( cs => cs.Name ).ToList();
+
+            for ( var i = 0; i < StatusesState.Count; i++ )
+            {
+                StatusesState[i].Order = i;
+            }
 
             var qualifierValue = connectionType.Id.ToString();
             var rockContext = new RockContext();
