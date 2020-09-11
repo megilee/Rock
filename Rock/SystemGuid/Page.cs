@@ -553,8 +553,15 @@ namespace Rock.SystemGuid
         public const string CONFIRM = "D73F83B4-E20E-4F95-9A2C-511FB669F44C";
 
         /// <summary>
-        /// Gets the Connections page guid
-        /// ParentPage: Manage
+        /// Gets the Connections board page guid.
+        /// ParentPage: Engagement
+        /// </summary>
+        public const string CONNECTIONS_BOARD = "4FBCEB52-8892-4035-BDEA-112A494BE81F";
+
+        /// <summary>
+        /// Gets the Connections page guid. This was the original connections root page that was replaced by
+        /// the connection board page.
+        /// ParentPage: Connections Board
         /// </summary>
         public const string CONNECTIONS = "530860ED-BC73-4A43-8E7C-69533EF2B6AD";
 
