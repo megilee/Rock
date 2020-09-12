@@ -1414,22 +1414,21 @@ $(document).ready(function() {
                             var selection = new List<string>();
                             selection.Add( entityField.UniqueName );
 
+                            // use the default comparison type that this property/attribute's field type uses.
+                            var supportedComparisonTypes = entityField.FieldType.Field.FilterComparisonType;
+                            ComparisonType defaultComparisonType = ComparisonType.EqualTo;
+                            foreach ( ComparisonType comparisonType in typeof( ComparisonType ).GetOrderedValues<ComparisonType>() )
+                            {
+                                if ( ( supportedComparisonTypes & comparisonType ) == comparisonType )
+                                {
+                                    defaultComparisonType = comparisonType;
+                                    break;
+                                }
+                            }
+
                             string value = PageParameter( fieldParameterKey );
-                            if ( entityField.FieldType.Guid.Equals( Rock.SystemGuid.FieldType.DAY_OF_WEEK.AsGuid() )
-                                    || entityField.FieldType.Guid.Equals( Rock.SystemGuid.FieldType.SINGLE_SELECT.AsGuid() ) )
-                            {
-                                selection.Add( value );
-                            }
-                            else if ( entityField.FieldType.Guid.Equals( Rock.SystemGuid.FieldType.MULTI_SELECT.AsGuid() ) )
-                            {
-                                selection.Add( ComparisonType.Contains.ConvertToInt().ToString() );
-                                selection.Add( value );
-                            }
-                            else
-                            {
-                                selection.Add( ComparisonType.EqualTo.ConvertToInt().ToString() );
-                                selection.Add( value );
-                            }
+                            selection.Add( defaultComparisonType.ConvertToInt().ToString() );
+                            selection.Add( value );
 
                             var entityFieldExpression = propertyFilter.GetExpression( itemType, contentChannelItemService, paramExpression, Newtonsoft.Json.JsonConvert.SerializeObject( selection ) );
 
