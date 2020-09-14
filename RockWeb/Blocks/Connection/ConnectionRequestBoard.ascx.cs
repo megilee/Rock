@@ -31,6 +31,8 @@ using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
+using Rock.SystemKey;
+using Rock.Utility;
 using Rock.Web;
 using Rock.Web.Cache;
 using Rock.Web.UI;
@@ -2979,6 +2981,204 @@ namespace RockWeb.Blocks.Connection
         }
 
         #endregion Filters, Sorting, and View Controls
+
+        #region Campaign Requests
+
+        /// <summary>
+        /// Handles the Click event of the btnCancelCampaignRequests control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void btnCancelCampaignRequests_Click( object sender, EventArgs e )
+        {
+            mdAddCampaignRequests.Hide();
+        }
+
+        /// <summary>
+        /// Handles the Click event of the btnAddCampaignRequests control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void btnAddCampaignRequests_Click( object sender, EventArgs e )
+        {
+            var campaignConnectionItems = Rock.Web.SystemSettings.GetValue( CampaignConnectionKey.CAMPAIGN_CONNECTION_CONFIGURATION ).FromJsonOrNull<List<CampaignItem>>() ?? new List<CampaignItem>();
+            campaignConnectionItems = campaignConnectionItems.Where( c => c.IsActive ).OrderBy( a => a.Name ).ToList();
+            var rockContext = new RockContext();
+
+            // limit to campaigns that the current person is a connector in
+            campaignConnectionItems = campaignConnectionItems.Where( a => CampaignConnectionHelper.GetConnectorCampusIds( a, CurrentPerson ).Any() ).ToList();
+
+            ddlCampaignConnectionItemsMultiple.Items.Clear();
+
+            var campaignConnectionItemsPendingCount = new Dictionary<CampaignItem, int>();
+            foreach ( var campaignConnectionItem in campaignConnectionItems )
+            {
+                int pendingCount = CampaignConnectionHelper.GetPendingConnectionCount( campaignConnectionItem, CurrentPerson );
+                campaignConnectionItemsPendingCount.AddOrIgnore( campaignConnectionItem, pendingCount );
+                var listItem = new ListItem();
+                listItem.Text = string.Format( "{0} ({1} pending connections)", campaignConnectionItem.Name, pendingCount );
+                listItem.Value = campaignConnectionItem.Guid.ToString();
+                ddlCampaignConnectionItemsMultiple.Items.Add( listItem );
+            }
+
+            nbAddConnectionRequestsMessage.Visible = false;
+            nbNumberOfRequests.Visible = true;
+
+            if ( campaignConnectionItems.Count() == 0 )
+            {
+                nbAddConnectionRequestsMessage.Text = "There are no campaigns available for you to request connections for.";
+                nbAddConnectionRequestsMessage.NotificationBoxType = Rock.Web.UI.Controls.NotificationBoxType.Warning;
+                nbAddConnectionRequestsMessage.Visible = true;
+                ddlCampaignConnectionItemsMultiple.Visible = false;
+                lCampaignConnectionItemSingle.Visible = false;
+                nbNumberOfRequests.Visible = false;
+            }
+            else if ( campaignConnectionItems.Count() == 1 )
+            {
+                var campaignConnectionItem = campaignConnectionItems[0];
+                lCampaignConnectionItemSingle.Visible = true;
+                int pendingCount = campaignConnectionItemsPendingCount.GetValueOrNull( campaignConnectionItem ) ?? 0;
+                lCampaignConnectionItemSingle.Text = string.Format( "{0} ({1} pending connections)", campaignConnectionItem.Name, pendingCount );
+
+                ddlCampaignConnectionItemsMultiple.Visible = false;
+            }
+            else
+            {
+                lCampaignConnectionItemSingle.Visible = false;
+                ddlCampaignConnectionItemsMultiple.Visible = true;
+            }
+
+            if ( campaignConnectionItems.Count > 0 )
+            {
+                var firstCampaignConnectionItem = campaignConnectionItems.First();
+                SetDefaultNumberOfRequests( firstCampaignConnectionItem.Guid, campaignConnectionItemsPendingCount.GetValueOrNull( firstCampaignConnectionItem ) ?? 0 );
+            }
+
+            mdAddCampaignRequests.Show();
+        }
+
+        /// <summary>
+        /// Sets the default number of requests.
+        /// </summary>
+        /// <param name="selectedCampaignConnectionItemGuid">The selected campaign connection item unique identifier.</param>
+        private void SetDefaultNumberOfRequests( Guid? selectedCampaignConnectionItemGuid, int pendingCount )
+        {
+            if ( !selectedCampaignConnectionItemGuid.HasValue )
+            {
+                // shouldn't happen
+                return;
+            }
+
+            var campaignConnectionItems = Rock.Web.SystemSettings.GetValue( CampaignConnectionKey.CAMPAIGN_CONNECTION_CONFIGURATION ).FromJsonOrNull<List<CampaignItem>>() ?? new List<CampaignItem>();
+            var selectedCampaignConnectionItem = campaignConnectionItems.Where( a => a.Guid == selectedCampaignConnectionItemGuid.Value ).FirstOrDefault();
+
+            var rockContext = new RockContext();
+            var opportunityService = new ConnectionOpportunityService( rockContext );
+            IQueryable<ConnectionOpportunityConnectorGroup> opportunityConnecterGroupQuery = opportunityService.Queryable()
+                .Where( a => a.Guid == selectedCampaignConnectionItem.OpportunityGuid )
+                .SelectMany( a => a.ConnectionOpportunityConnectorGroups );
+
+            int? defaultDailyLimitAssigned = null;
+
+            // Check to see if the group member has any CampaignDailyLimit values defined.
+            var currentPersonConnectorGroupMember = opportunityConnecterGroupQuery
+                .Select( s => s.ConnectorGroup ).SelectMany( g => g.Members )
+                .WhereAttributeValue( rockContext, av => ( av.Attribute.Key == "CampaignDailyLimit" ) && av.ValueAsNumeric > 0 )
+                .FirstOrDefault( m => m.PersonId == this.CurrentPersonId.Value );
+
+            if ( currentPersonConnectorGroupMember != null )
+            {
+                currentPersonConnectorGroupMember.LoadAttributes();
+                defaultDailyLimitAssigned = currentPersonConnectorGroupMember.GetAttributeValue( "CampaignDailyLimit" ).AsIntegerOrNull();
+            }
+
+            if ( defaultDailyLimitAssigned == null && selectedCampaignConnectionItem.CreateConnectionRequestOption == CreateConnectionRequestOptions.AsNeeded )
+            {
+                defaultDailyLimitAssigned = selectedCampaignConnectionItem.DailyLimitAssigned;
+            }
+
+            var entitySetItemService = new EntitySetItemService( rockContext );
+
+            if ( pendingCount == 0 )
+            {
+                nbAddConnectionRequestsMessage.Text = "There are no pending requests remaining.";
+                nbAddConnectionRequestsMessage.NotificationBoxType = Rock.Web.UI.Controls.NotificationBoxType.Info;
+                nbAddConnectionRequestsMessage.Visible = true;
+            }
+            else if ( pendingCount < defaultDailyLimitAssigned )
+            {
+                nbAddConnectionRequestsMessage.Text = string.Format( "There are only {0} pending requests remaining.", pendingCount );
+                nbAddConnectionRequestsMessage.NotificationBoxType = Rock.Web.UI.Controls.NotificationBoxType.Info;
+                nbAddConnectionRequestsMessage.Visible = true;
+                defaultDailyLimitAssigned = pendingCount;
+            }
+            else
+            {
+                nbAddConnectionRequestsMessage.Visible = false;
+            }
+
+            nbNumberOfRequests.Text = defaultDailyLimitAssigned.ToString();
+        }
+
+        /// <summary>
+        /// Handles the SaveClick event of the mdAddCampaignRequests control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void mdAddCampaignRequests_SaveClick( object sender, EventArgs e )
+        {
+            // note if there is only one CampaignConnectionItem, ddlCampaignConnectionItemsMultiple will not be visible, but it is still the selected one, because there is only one
+            var selectedCampaignConnectionItemGuid = ddlCampaignConnectionItemsMultiple.SelectedValue.AsGuidOrNull();
+            if ( !selectedCampaignConnectionItemGuid.HasValue )
+            {
+                // shouldn't happen
+                return;
+            }
+
+            var campaignConnectionItems = Rock.Web.SystemSettings.GetValue( CampaignConnectionKey.CAMPAIGN_CONNECTION_CONFIGURATION ).FromJsonOrNull<List<CampaignItem>>() ?? new List<CampaignItem>();
+            var selectedCampaignConnectionItem = campaignConnectionItems.Where( a => a.Guid == selectedCampaignConnectionItemGuid.Value ).FirstOrDefault();
+
+            if ( selectedCampaignConnectionItem == null )
+            {
+                // shouldn't happen
+                return;
+            }
+
+            int numberOfRequests, numberOfRequestsRemaining;
+            numberOfRequests = nbNumberOfRequests.Text.AsInteger();
+            CampaignConnectionHelper.AddConnectionRequestsForPerson( selectedCampaignConnectionItem, this.CurrentPerson, numberOfRequests, out numberOfRequestsRemaining );
+
+            if ( numberOfRequestsRemaining == numberOfRequests )
+            {
+                nbAddConnectionRequestsMessage.Text = "Additional Requests are not available as this time.";
+                nbAddConnectionRequestsMessage.NotificationBoxType = Rock.Web.UI.Controls.NotificationBoxType.Info;
+                nbAddConnectionRequestsMessage.Visible = true;
+            }
+
+            mdAddCampaignRequests.Hide();
+            NavigateToCurrentPageReference();
+        }
+
+        /// <summary>
+        /// Handles the SelectedIndexChanged event of the ddlCampaignConnectionItem control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void ddlCampaignConnectionItem_SelectedIndexChanged( object sender, EventArgs e )
+        {
+            var selectedCampaignConnectionItemGuid = ddlCampaignConnectionItemsMultiple.SelectedValue.AsGuidOrNull();
+            if ( !selectedCampaignConnectionItemGuid.HasValue )
+            {
+                // shouldn't happen
+                return;
+            }
+
+            var campaignConnectionItem = CampaignConnectionHelper.GetCampaignConfiguration( selectedCampaignConnectionItemGuid.Value );
+            int pendingCount = CampaignConnectionHelper.GetPendingConnectionCount( campaignConnectionItem, CurrentPerson );
+            SetDefaultNumberOfRequests( selectedCampaignConnectionItemGuid.Value, pendingCount );
+        }
+
+        #endregion Campaign Requests
 
         #region UI Bindings
 

@@ -65,7 +65,6 @@ namespace Rock.Migrations
             RockMigrationHelper.MovePage( SystemGuid.Page.CONNECTIONS, SystemGuid.Page.CONNECTIONS_BOARD );
             // Add/Update BlockType Connection Request Board
             RockMigrationHelper.UpdateBlockType( "Connection Request Board", "Display the Connection Requests for a selected Connection Opportunity as a list or board view.", "~/Blocks//Connection/ConnectionRequestBoard.ascx", "Connection", "28DBE708-E99B-4879-A64D-656C030D25B5" );
-            RockMigrationHelper.AddBlock( true, SystemGuid.Page.CONNECTIONS_BOARD.AsGuid(), null, "C2D29296-6A87-47A9-A753-EE4E9159C4C4".AsGuid(), "11630BB9-E685-4582-91F8-620448AA34B0".AsGuid(), "Add Campaign Requests", "Main", @"", @"", 0, "06944871-258E-436E-8F57-D1BA950328C4" );
             // Add Block Connection Request Board to Page: Connections, Site: Rock RMS
             RockMigrationHelper.AddBlock( true, "4FBCEB52-8892-4035-BDEA-112A494BE81F".AsGuid(), null, "C2D29296-6A87-47A9-A753-EE4E9159C4C4".AsGuid(), "28DBE708-E99B-4879-A64D-656C030D25B5".AsGuid(), "Connection Request Board", "Main", @"", @"", 0, "7908EAD6-832B-4E38-9EDA-5FC40115DA0E" );
         }

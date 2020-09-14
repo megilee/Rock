@@ -1,6 +1,10 @@
 <%@ Control Language="C#" AutoEventWireup="true" CodeFile="ConnectionRequestBoard.ascx.cs" Inherits="RockWeb.Blocks.Connection.ConnectionRequestBoard" %>
 
 <style>
+    .panel-follow-status {
+        padding-top: 20px;
+    }
+
     .main-content #page-content {
         min-height: 0;
     }
@@ -390,10 +394,19 @@
 
             <asp:UpdatePanel ID="upnlHeader" runat="server">
                 <ContentTemplate>
-                    <div class="panel-heading panel-follow">
-                        <h2 class="panel-title">
+                    <div class="panel-heading panel-follow d-flex flex-wrap flex-sm-nowrap justify-content-between padding-b-none">
+                        <h2 class="panel-title d-block padding-t-sm">
                             <asp:Literal ID="lTitle" runat="server" />
                         </h2>
+                        <div class="d-block padding-b-md">
+                            <asp:LinkButton ID="btnAddCampaignRequests" runat="server" OnClick="btnAddCampaignRequests_Click" CssClass="btn btn-default btn-sm">
+                                <i class="fa fa-plus"></i>
+                                Campaign Requests
+                            </asp:LinkButton>
+                            <asp:LinkButton ID="lbConfig" runat="server" CssClass="btn btn-default btn-sm" OnClick="lbConfig_Click" CausesValidation="false">
+                                <i title="Options" class="fa fa-gear"></i>
+                            </asp:LinkButton>
+                        </div>
                         <asp:Panel runat="server" ID="pnlFollowing" CssClass="panel-follow-status js-follow-status" data-toggle="tooltip" data-placement="top" title="Click to Follow"></asp:Panel>
                     </div>
                     <div class="panel-collapsable">
@@ -517,10 +530,6 @@
                                     </ul>
                                 </div>
                                 <asp:LinkButton ID="lbToggleViewMode" runat="server" CssClass="btn btn-xs" OnClick="lbToggleViewMode_Click" />
-                                <asp:LinkButton ID="lbConfig" runat="server" CssClass="btn btn-xs" OnClick="lbConfig_Click" CausesValidation="false">
-                                    <i title="Options" class="fa fa-gear"></i>
-                                    Setup
-                                </asp:LinkButton>
                             </div>
                         </div>
 
@@ -596,6 +605,16 @@
 
         <asp:UpdatePanel ID="upnlModals" runat="server">
             <ContentTemplate>
+
+                <Rock:ModalDialog ID="mdAddCampaignRequests" runat="server" Title="Get Additional Requests" SaveButtonText="Assign" CancelLinkVisible="true" ValidationGroup="vgAddCampaignRequests" OnSaveClick="mdAddCampaignRequests_SaveClick">
+                    <Content>
+                        <Rock:RockLiteral ID="lCampaignConnectionItemSingle" runat="server" Label="Campaign" />
+                        <Rock:RockDropDownList ID="ddlCampaignConnectionItemsMultiple" runat="server" Label="Campaign" AutoPostBack="true" OnSelectedIndexChanged="ddlCampaignConnectionItem_SelectedIndexChanged" /> 
+                        <Rock:NotificationBox ID="nbAddConnectionRequestsMessage" runat="server" Visible="False" />
+
+                        <Rock:NumberBox ID="nbNumberOfRequests" runat="server" Label="Number of Requests" NumberType="Integer" Required="true" MinimumValue="0"  ValidationGroup="vgAddCampaignRequests"/>
+                    </Content>
+                </Rock:ModalDialog>
 
                 <Rock:ModalDialog ID="mdRequest" runat="server" ValidationGroup="vgRequestModal" Title="Connection Request" Visible="false" ClickBackdropToClose="true">
                     <Content>
