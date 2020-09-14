@@ -609,7 +609,7 @@
                 <Rock:ModalDialog ID="mdAddCampaignRequests" runat="server" Title="Get Additional Requests" SaveButtonText="Assign" CancelLinkVisible="true" ValidationGroup="vgAddCampaignRequests" OnSaveClick="mdAddCampaignRequests_SaveClick">
                     <Content>
                         <Rock:RockLiteral ID="lCampaignConnectionItemSingle" runat="server" Label="Campaign" />
-                        <Rock:RockDropDownList ID="ddlCampaignConnectionItemsMultiple" runat="server" Label="Campaign" AutoPostBack="true" OnSelectedIndexChanged="ddlCampaignConnectionItem_SelectedIndexChanged" /> 
+                        <Rock:RockDropDownList ID="ddlCampaignConnectionItemsMultiple" runat="server" Label="Campaign" AutoPostBack="true" OnSelectedIndexChanged="ddlCampaignConnectionItem_SelectedIndexChanged" />
                         <Rock:NotificationBox ID="nbAddConnectionRequestsMessage" runat="server" Visible="False" />
 
                         <Rock:NumberBox ID="nbNumberOfRequests" runat="server" Label="Number of Requests" NumberType="Integer" Required="true" MinimumValue="0"  ValidationGroup="vgAddCampaignRequests"/>
@@ -726,7 +726,7 @@
                                         </asp:LinkButton>
                                     </div>
                                 </div>
-                                <Rock:Grid ID="gRequestModalViewModeActivities" runat="server" AllowPaging="false" DisplayType="Light" AllowSorting="false" OnRowSelected="gRequestModalViewModeActivities_RowSelected">
+                                <Rock:Grid ID="gRequestModalViewModeActivities" runat="server" AllowPaging="false" DisplayType="Light" AllowSorting="false" OnRowSelected="gRequestModalViewModeActivities_RowSelected" OnRowDataBound="gRequestModalViewModeActivities_RowDataBound">
                                     <Columns>
                                         <Rock:DateTimeField HeaderText="Date" DataField="Date" DataFormatString="{0:d}" />
                                         <Rock:RockBoundField DataField="ActivityMarkup" HeaderText="Activity" HtmlEncode="false" />

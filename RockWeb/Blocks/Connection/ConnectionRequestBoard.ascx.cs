@@ -833,7 +833,7 @@ namespace RockWeb.Blocks.Connection
                 if ( activity != null )
                 {
                     tbRequestModalViewModeAddActivityModeNote.Text = activity.Note;
-                    ddlRequestModalViewModeAddActivityModeConnector.SelectedValue = connectorPersonAliasId.ToStringSafe();
+                    ddlRequestModalViewModeAddActivityModeConnector.SelectedValue = (connectorPersonAliasId ?? 0).ToStringSafe();
                     ddlRequestModalViewModeAddActivityModeType.SelectedValue = activity.ConnectionActivityTypeId.ToString();
                 }
                 else
@@ -2034,12 +2034,52 @@ namespace RockWeb.Blocks.Connection
         #region Request Modal (View Mode) Activities Grid
 
         /// <summary>
+        /// Handles the RowDataBound event of the gConnectionRequestActivities control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="GridViewRowEventArgs"/> instance containing the event data.</param>
+        protected void gRequestModalViewModeActivities_RowDataBound( object sender, GridViewRowEventArgs e )
+        {
+            if ( e.Row.RowType != DataControlRowType.DataRow )
+            {
+                return;
+            }
+
+            var viewModel = e.Row.DataItem as ActivityViewModel;
+
+            if ( viewModel == null )
+            {
+                return;
+            }
+
+            if ( viewModel.OpportunityId.HasValue && viewModel.OpportunityId.Value == ConnectionOpportunityId )
+            {
+                e.Row.AddCssClass( "info" );
+            }
+
+            if ( !viewModel.CanEdit )
+            {
+                var cellCount = e.Row.Cells.Count;
+                var lastCell = e.Row.Cells[cellCount - 1];
+                var lbDelete = lastCell.Controls[0] as LinkButton;
+                lbDelete.Enabled = false;
+            }
+        }
+
+        /// <summary>
         /// Handles the RowSelected event of the gRequestModalViewModeActivities control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
         protected void gRequestModalViewModeActivities_RowSelected( object sender, RowEventArgs e )
         {
+            var viewModel = e.Row.DataItem as ActivityViewModel;
+
+            if ( viewModel == null || !viewModel.CanEdit )
+            {
+                return;
+            }
+
             CurrentActivityId = e.RowKeyId;
             RequestModalViewModeSubMode = RequestModalViewModeSubMode_AddEditActivity;
             ShowRequestModal();
@@ -4324,21 +4364,37 @@ namespace RockWeb.Blocks.Connection
             }
 
             var rockContext = new RockContext();
+            var connectionType = GetConnectionType();
             var connectionRequestActivityService = new ConnectionRequestActivityService( rockContext );
-
-            return connectionRequestActivityService.Queryable()
+            var query = connectionRequestActivityService.Queryable()
                 .AsNoTracking()
-                .Where( a => a.ConnectionRequestId == connectionRequestViewModel.Id )
-                .Select( a => new ActivityViewModel
-                {
-                    Id = a.Id,
-                    ActivityTypeName = a.ConnectionActivityType.Name,
-                    Note = a.Note,
-                    ConnectorPersonNickName = a.ConnectorPersonAlias.Person.NickName,
-                    ConnectorPersonLastName = a.ConnectorPersonAlias.Person.LastName,
-                    Date = a.CreatedDateTime,
-                    OpportunityName = a.ConnectionOpportunity.Name
-                } )
+                .Where( a => a.ConnectionRequest.PersonAliasId == connectionRequestViewModel.PersonAliasId );
+
+            if ( connectionType.EnableFullActivityList )
+            {
+                query = query.Where( a => a.ConnectionOpportunity.ConnectionTypeId == connectionType.Id );
+            }
+            else
+            {
+                query = query.Where( a => a.ConnectionRequestId == connectionRequestViewModel.Id );
+            }
+
+            return query.Select( a => new ActivityViewModel
+            {
+                Id = a.Id,
+                ActivityTypeName = a.ConnectionActivityType.Name,
+                Note = a.Note,
+                ConnectorPersonNickName = a.ConnectorPersonAlias.Person.NickName,
+                ConnectorPersonLastName = a.ConnectorPersonAlias.Person.LastName,
+                Date = a.CreatedDateTime,
+                OpportunityName = a.ConnectionOpportunity.Name,
+                OpportunityId = a.ConnectionOpportunityId,
+                CanEdit = (
+                        a.CreatedByPersonAliasId == CurrentPersonAliasId ||
+                        a.ConnectorPersonAliasId == CurrentPersonAliasId
+                    ) &&
+                    a.ConnectionActivityType.ConnectionTypeId.HasValue
+            } )
                 .OrderByDescending( vm => vm.Date )
                 .ThenByDescending( vm => vm.Id );
         }
@@ -4750,6 +4806,16 @@ namespace RockWeb.Blocks.Connection
             /// Gets or sets the opportunity name.
             /// </summary>
             public string OpportunityName { get; set; }
+
+            /// <summary>
+            /// Gets or sets the opportunity identifier.
+            /// </summary>
+            public int? OpportunityId { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether this instance can edit.
+            /// </summary>
+            public bool CanEdit { get; set; }
 
             /// <summary>
             /// Connector Person Fullname
