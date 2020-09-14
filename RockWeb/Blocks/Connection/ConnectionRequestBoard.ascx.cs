@@ -726,6 +726,7 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private void BindRequestModalViewMode()
         {
+            mdRequest.Footer.Visible = false;
             var viewModel = GetConnectionRequestViewModel();
 
             if ( viewModel == null )

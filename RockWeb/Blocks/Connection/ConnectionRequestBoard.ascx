@@ -751,7 +751,7 @@
                                     <Rock:RockDropDownList runat="server" ID="ddlRequestModalViewModeAddActivityModeConnector" Label="Connector" FormGroupCssClass="col-md-6" />
                                     <Rock:RockTextBox runat="server" ID="tbRequestModalViewModeAddActivityModeNote" Label="Note" TextMode="MultiLine" Rows="4" FormGroupCssClass="col-md-12" />
                                 </div>
-                                <div class="actions">
+                                <div class="actions text-right">
                                     <asp:LinkButton ID="btnRequestModalViewModeAddActivityModeSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="btnRequestModalViewModeAddActivityModeSave_Click" />
                                     <asp:LinkButton ID="btnRequestModalViewModeAddActivityModeCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" OnClick="btnRequestModalViewModeAddActivityModeCancel_Click" CausesValidation="false" />
                                 </div>
@@ -792,7 +792,7 @@
                                     </div>
                                 </div>
                                 <Rock:RockTextBox ID="tbRequestModalViewModeTransferModeNote" runat="server" Label="Note" TextMode="MultiLine" Rows="4" />
-                                <div class="actions">
+                                <div class="actions text-right">
                                     <asp:LinkButton ID="btnRequestModalViewModeTransferModeSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Transfer" CssClass="btn btn-primary" OnClick="btnRequestModalViewModeTransferModeSave_Click"></asp:LinkButton>
                                     <asp:LinkButton ID="btnRequestModalViewModeTransferModeCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" OnClick="btnRequestModalViewModeTransferModeCancel_Click" CausesValidation="false"></asp:LinkButton>
                                 </div>
@@ -832,7 +832,7 @@
 
                             <Rock:AttributeValuesContainer ID="avcRequestModalAddEditMode" runat="server" NumberOfColumns="2" />
 
-                            <div class="actions">
+                            <div class="actions text-right">
                                 <asp:LinkButton ID="lbRequestModalAddEditModeSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="lbRequestModalAddEditModeSave_Click" />
                                 <asp:LinkButton ID="lbRequestModalAddEditModeCancel" runat="server" AccessKey="c" ToolTip="Alt+c" Text="Cancel" CssClass="btn btn-link" OnClick="lbRequestModalAddEditModeCancel_Click" CausesValidation="false" />
                             </div>
