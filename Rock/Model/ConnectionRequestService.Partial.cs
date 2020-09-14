@@ -565,6 +565,7 @@ namespace Rock.Model
                 .SelectMany( co => co.ConnectionType.ConnectionStatuses )
                 .Where( cs => cs.IsActive )
                 .OrderBy( cs => cs.Order )
+                .ThenByDescending( cs => cs.IsDefault )
                 .ThenBy( cs => cs.Name );
         }
 

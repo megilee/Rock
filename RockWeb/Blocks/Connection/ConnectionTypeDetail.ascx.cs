@@ -1580,7 +1580,11 @@ namespace RockWeb.Blocks.Connection
 
             ActivityTypesState = connectionType.ConnectionActivityTypes.ToList();
             WorkflowsState = connectionType.ConnectionWorkflows.ToList();
-            StatusesState = connectionType.ConnectionStatuses.OrderBy( cs => cs.Order ).ThenBy( cs => cs.Name ).ToList();
+            StatusesState = connectionType.ConnectionStatuses
+                .OrderBy( cs => cs.Order )
+                .ThenByDescending( cs => cs.IsDefault )
+                .ThenBy( cs => cs.Name )
+                .ToList();
 
             for ( var i = 0; i < StatusesState.Count; i++ )
             {
