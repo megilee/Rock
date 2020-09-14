@@ -839,7 +839,7 @@
                                     <Rock:RockDropDownList ID="ddlRequestModalAddEditModePlacementStatus" runat="server" Label="Group Member Status" Visible="false" />
                                 </div>
                                 <div class="col-md-6">
-                                    <Rock:CampusPicker ID="cpRequestModalAddEditModeCampus" runat="server" Label="Campus" AutoPostBack="true" OnSelectedIndexChanged="cpRequestModalAddEditModeCampus_SelectedIndexChanged" />
+                                    <Rock:CampusPicker ID="cpRequestModalAddEditModeCampus" runat="server" Label="Campus" AutoPostBack="true" OnSelectedIndexChanged="cpRequestModalAddEditModeCampus_SelectedIndexChanged" IncludeInactive="false" />
                                 </div>
                             </div>
 

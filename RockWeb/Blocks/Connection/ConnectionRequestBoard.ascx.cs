@@ -2209,7 +2209,7 @@ namespace RockWeb.Blocks.Connection
             var request = GetConnectionRequestViewModel();
             var connectionOpportunities = GetConnectionOpportunities();
 
-            cblSearchModalCampus.DataSource = CampusCache.All();
+            cblSearchModalCampus.DataSource = CampusCache.All().Where( c => c.IsActive != false );
             cblSearchModalCampus.DataBind();
 
             if ( request.CampusId.HasValue )
