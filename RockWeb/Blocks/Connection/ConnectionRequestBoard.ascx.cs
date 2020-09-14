@@ -1579,6 +1579,7 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private void BindRequestModalAddEditMode()
         {
+            mdRequest.Footer.Visible = false;
             var viewModel = GetConnectionRequestViewModel();
             var campusId = viewModel != null ? viewModel.CampusId : CampusId;
             var connectorPersonAliasId = viewModel == null ? null : viewModel.ConnectorPersonAliasId;
@@ -1588,7 +1589,10 @@ namespace RockWeb.Blocks.Connection
 
             // Status
             rblRequestModalAddEditModeStatus.Items.Clear();
-            var allStatuses = GetConnectionType().ConnectionStatuses.OrderBy( a => a.Order ).ThenBy( a => a.Name );
+            var allStatuses = GetConnectionType().ConnectionStatuses
+                .OrderBy( cs => cs.Order )
+                .ThenByDescending( cs => cs.IsDefault )
+                .ThenBy( cs => cs.Name );
 
             foreach ( var status in allStatuses )
             {
@@ -1623,6 +1627,15 @@ namespace RockWeb.Blocks.Connection
                 {
                     rblRequestModalAddEditModeStatus.SetValue( defaultStatus.Id );
                 }
+
+                ppRequestModalAddEditModePerson.SetValue( null );
+                ddlRequestModalAddEditModeConnector.SetValue( string.Empty );
+                rblRequestModalAddEditModeState.SetValue( string.Empty );
+                tbRequestModalAddEditModeComments.Text = null;
+                ddlRequestModalAddEditModePlacementGroup.SetValue( string.Empty );
+                ddlRequestModalAddEditModePlacementRole.SetValue( string.Empty );
+                ddlRequestModalAddEditModePlacementStatus.SetValue( string.Empty );
+                dpRequestModalAddEditModeFollowUp.SelectedDate = null;
             }
 
             SyncRequestModalAddEditModeFollowUp();
