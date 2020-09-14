@@ -100,6 +100,14 @@ namespace RockWeb.Blocks.Connection
         Key = AttributeKey.ConnectionRequestStatusIconsTemplate,
         Order = 6 )]
 
+    [LinkedPage(
+        "Configuration Page",
+        Description = "Page used to modify and create connection opportunities.",
+        IsRequired = true,
+        Order = 7,
+        DefaultValue = Rock.SystemGuid.Page.CONNECTION_TYPES,
+        Key = AttributeKey.ConfigurationPage )]
+
     public partial class ConnectionRequestBoard : RockBlock
     {
         /*
@@ -171,6 +179,11 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private static class AttributeKey
         {
+            /// <summary>
+            /// The configuration page
+            /// </summary>
+            public const string ConfigurationPage = "ConfigurationPage";
+
             /// <summary>
             /// The maximum number of cards
             /// </summary>
@@ -2602,6 +2615,16 @@ namespace RockWeb.Blocks.Connection
         #endregion Board Repeaters
 
         #region Filters, Sorting, and View Controls
+
+        /// <summary>
+        /// Handles the Click event of the lbConfig control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        protected void lbConfig_Click( object sender, EventArgs e )
+        {
+            NavigateToLinkedPage( AttributeKey.ConfigurationPage );
+        }
 
         /// <summary>
         /// Handles the Click event of the lbToggleViewMode control.

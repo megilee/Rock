@@ -571,6 +571,12 @@ namespace Rock.SystemGuid
         public const string CONNECTION_REQUEST_DETAIL = "50f04e77-8d3b-4268-80ab-bc15dd6cb262";
 
         /// <summary>
+        /// Connection Type Config Page
+        /// ParentPage: Connections
+        /// </summary>
+        public const string CONNECTION_TYPES = "9CC19684-7AD2-4D4E-A7C4-10DAE56E7FA6";
+
+        /// <summary>
         /// Gets the Contact Us page guid
         /// ParentPage: Connect
         /// </summary>

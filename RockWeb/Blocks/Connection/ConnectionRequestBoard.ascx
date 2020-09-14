@@ -517,6 +517,10 @@
                                     </ul>
                                 </div>
                                 <asp:LinkButton ID="lbToggleViewMode" runat="server" CssClass="btn btn-xs" OnClick="lbToggleViewMode_Click" />
+                                <asp:LinkButton ID="lbConfig" runat="server" CssClass="btn btn-xs" OnClick="lbConfig_Click" CausesValidation="false">
+                                    <i title="Options" class="fa fa-gear"></i>
+                                    Setup
+                                </asp:LinkButton>
                             </div>
                         </div>
 
