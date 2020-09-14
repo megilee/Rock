@@ -478,7 +478,7 @@
                 if (data && data.DoesCauseWorkflows) {
                     const from = data.FromStatusName ? data.FromStatusName : 'that status';
                     const to = data.ToStatusName ? data.ToStatusName : 'this status';
-                    const msg = 'Changing the status from ' + from + ' to ' + to + 'will trigger workflows to launch. Do you wish to continue with this change ?';
+                    const msg = 'Changing the status from ' + from + ' to ' + to + ' will trigger workflows to launch. Do you wish to continue with this change ?';
 
                     promptConfirmation(msg,
                         function () {

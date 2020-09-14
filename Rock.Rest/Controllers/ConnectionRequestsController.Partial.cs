@@ -29,7 +29,7 @@ using Rock.Web.UI.Controls;
 namespace Rock.Rest.Controllers
 {
     /// <summary>
-    /// 
+    /// Connection Requests Controller
     /// </summary>
     public partial class ConnectionRequestsController
     {

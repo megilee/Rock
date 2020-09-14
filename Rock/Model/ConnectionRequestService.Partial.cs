@@ -76,6 +76,7 @@ namespace Rock.Model
             // Query for if there are connection workflows for these statuses
             var workflowQuery = connectionWorkflowService.Queryable()
                 .AsNoTracking()
+                .Where( cw => cw.TriggerType == ConnectionWorkflowTriggerType.StatusChanged )
                 .Where( cw =>
                     (
                         cw.ConnectionType.ConnectionStatuses.Any( cs => cs.Id == fromStatusId ) &&

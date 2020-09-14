@@ -828,14 +828,18 @@ namespace RockWeb.Blocks.Connection
                 } ).ToList();
                 ddlRequestModalViewModeAddActivityModeType.DataBind();
                 BindConnectorOptions( ddlRequestModalViewModeAddActivityModeConnector, true, viewModel.CampusId, connectorPersonAliasId );
-                tbRequestModalViewModeAddActivityModeNote.Text = string.Empty;
-
+                
                 // Bind edit mode if appropriate
                 if ( activity != null )
                 {
                     tbRequestModalViewModeAddActivityModeNote.Text = activity.Note;
                     ddlRequestModalViewModeAddActivityModeConnector.SelectedValue = connectorPersonAliasId.ToStringSafe();
                     ddlRequestModalViewModeAddActivityModeType.SelectedValue = activity.ConnectionActivityTypeId.ToString();
+                }
+                else
+                {
+                    ddlRequestModalViewModeAddActivityModeConnector.SelectedValue = CurrentPersonAliasId.ToStringSafe();
+                    tbRequestModalViewModeAddActivityModeNote.Text = string.Empty;
                 }
             }
             else if ( RequestModalViewModeSubMode == RequestModalViewModeSubMode_View )
@@ -1067,7 +1071,7 @@ namespace RockWeb.Blocks.Connection
             var newConnectorPersonAliasId = ddlRequestModalAddEditModeConnector.SelectedValueAsInt();
 
             connectionRequest.ConnectionOpportunityId = GetConnectionOpportunity().Id;
-            connectionRequest.ConnectorPersonAliasId = newConnectorPersonAliasId;
+            connectionRequest.ConnectorPersonAliasId = newConnectorPersonAliasId == 0 ? null : newConnectorPersonAliasId;
             connectionRequest.PersonAliasId = ppRequestModalAddEditModePerson.PersonAliasId ?? 0;
 
             var state = rblRequestModalAddEditModeState.SelectedValueAsEnumOrNull<ConnectionState>();
@@ -1610,7 +1614,7 @@ namespace RockWeb.Blocks.Connection
                 var requestor = personService.Get( viewModel.PersonId );
 
                 ppRequestModalAddEditModePerson.SetValue( requestor );
-                ddlRequestModalAddEditModeConnector.SetValue( viewModel.ConnectorPersonAliasId );
+                ddlRequestModalAddEditModeConnector.SetValue( connectorPersonAliasId );
                 rblRequestModalAddEditModeState.SetValue( ( int ) viewModel.ConnectionState );
                 tbRequestModalAddEditModeComments.Text = viewModel.Comments;
                 rblRequestModalAddEditModeStatus.SetValue( viewModel.StatusId );
@@ -1636,6 +1640,14 @@ namespace RockWeb.Blocks.Connection
                 ddlRequestModalAddEditModePlacementRole.SetValue( string.Empty );
                 ddlRequestModalAddEditModePlacementStatus.SetValue( string.Empty );
                 dpRequestModalAddEditModeFollowUp.SelectedDate = null;
+
+                var connectionOpportunity = GetConnectionOpportunity();
+
+                if ( connectionOpportunity != null )
+                {
+                    var defaultConnectorPersonAliasId = connectionOpportunity.GetDefaultConnectorPersonAliasId( CampusId );
+                    ddlRequestModalAddEditModeConnector.SetValue( defaultConnectorPersonAliasId );
+                }
             }
 
             SyncRequestModalAddEditModeFollowUp();
@@ -3389,7 +3401,11 @@ namespace RockWeb.Blocks.Connection
         {
             ddl.DataTextField = "Fullname";
             ddl.DataValueField = "PersonAliasId";
-            ddl.DataSource = GetConnectors( includeCurrentPerson, campusId, personAliasIdToInclude );
+
+            var connectors = GetConnectors( includeCurrentPerson, campusId, personAliasIdToInclude );
+            connectors.Insert( 0, new ConnectorViewModel() );
+
+            ddl.DataSource = connectors;
             ddl.DataBind();
         }
 
