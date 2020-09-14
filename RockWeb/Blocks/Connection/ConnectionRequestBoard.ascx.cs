@@ -803,6 +803,9 @@ namespace RockWeb.Blocks.Connection
             mainDescList.Add( "Notes", viewModel.Comments );
             lRequestModalViewModeMainDescription.Text = mainDescList.Html;
 
+            // Manual workflows
+            BindManualWorkflows();
+
             // Bind the connectors button dropdown
             BindModalViewModeConnectorOptions();
 
@@ -1628,6 +1631,134 @@ namespace RockWeb.Blocks.Connection
         }
 
         #endregion Add Request Modal
+
+        #region Manual Workflows
+
+        /// <summary>
+        /// Binds the manual workflows.
+        /// </summary>
+        private void BindManualWorkflows()
+        {
+            var connectionOpportunity = GetConnectionOpportunity();
+
+            if ( connectionOpportunity == null )
+            {
+                return;
+            }
+
+            var connectionWorkflows = connectionOpportunity.ConnectionWorkflows.Union( connectionOpportunity.ConnectionType.ConnectionWorkflows );
+            var manualWorkflows = connectionWorkflows
+                .Where( w =>
+                    w.TriggerType == ConnectionWorkflowTriggerType.Manual &&
+                    w.WorkflowType != null )
+                .OrderBy( w => w.WorkflowType.Name )
+                .Distinct();
+
+            var authorizedWorkflows = new List<ConnectionWorkflow>();
+            foreach ( var manualWorkflow in manualWorkflows )
+            {
+                if ( manualWorkflow.WorkflowType.IsActive ?? true && manualWorkflow.WorkflowType.IsAuthorized( Authorization.VIEW, CurrentPerson ) )
+                {
+                    authorizedWorkflows.Add( manualWorkflow );
+                }
+            }
+
+            if ( authorizedWorkflows.Any() )
+            {
+                divRequestModalViewModeWorkflows.Visible = true;
+                rptRequestWorkflows.DataSource = authorizedWorkflows.ToList();
+                rptRequestWorkflows.DataBind();
+            }
+            else
+            {
+                divRequestModalViewModeWorkflows.Visible = false;
+            }
+        }
+
+        /// <summary>
+        /// Handles the ItemCommand event of the rptRequestWorkflows control.
+        /// </summary>
+        /// <param name="source">The source of the event.</param>
+        /// <param name="e">The <see cref="RepeaterCommandEventArgs"/> instance containing the event data.</param>
+        protected void rptRequestWorkflows_ItemCommand( object source, RepeaterCommandEventArgs e )
+        {
+            var connectionWorkflowId = e.CommandArgument.ToStringSafe().AsInteger();
+
+            if ( e.CommandName != "LaunchWorkflow" || connectionWorkflowId == 0 || !ConnectionRequestId.HasValue )
+            {
+                return;
+            }
+
+            var rockContext = new RockContext();
+            var connectionRequestService = new ConnectionRequestService( rockContext );
+            var connectionRequest = connectionRequestService.Get( ConnectionRequestId.Value );
+            var connectionWorkflowService = new ConnectionWorkflowService( rockContext );
+            var connectionWorkflow = connectionWorkflowService.Get( connectionWorkflowId );
+
+            if ( connectionWorkflow == null || connectionRequest == null )
+            {
+                return;
+            }
+
+            var workflowType = connectionWorkflow.WorkflowTypeCache;
+
+            if ( workflowType == null || workflowType.IsActive == false )
+            {
+                return;
+            }
+
+            var workflow = Workflow.Activate( workflowType, connectionWorkflow.WorkflowType.WorkTerm, rockContext );
+
+            if ( workflow == null )
+            {
+                return;
+            }
+
+            var workflowService = new WorkflowService( rockContext );
+            List<string> workflowErrors;
+
+            if ( workflowService.Process( workflow, connectionRequest, out workflowErrors ) )
+            {
+                if ( workflow.Id != 0 )
+                {
+                    new ConnectionRequestWorkflowService( rockContext ).Add( new ConnectionRequestWorkflow
+                    {
+                        ConnectionRequestId = connectionRequest.Id,
+                        WorkflowId = workflow.Id,
+                        ConnectionWorkflowId = connectionWorkflow.Id,
+                        TriggerType = connectionWorkflow.TriggerType,
+                        TriggerQualifier = connectionWorkflow.QualifierValue
+                    } );
+
+                    rockContext.SaveChanges();
+
+                    if ( workflow.HasActiveEntryForm( CurrentPerson ) )
+                    {
+                        NavigateToLinkedPage( AttributeKey.WorkflowEntryPage, new Dictionary<string, string>
+                        {
+                            { "WorkflowTypeId", workflowType.Id.ToString() },
+                            { "WorkflowGuid", workflow.Guid.ToString() }
+                        } );
+                    }
+                    else
+                    {
+                        var message = string.Format( "A '{0}' workflow was processed.", workflowType.Name );
+                        mdWorkflowLaunched.Show( message, ModalAlertType.Information );
+                    }
+                }
+                else
+                {
+                    var message = string.Format( "A '{0}' workflow was processed.", workflowType.Name );
+                    mdWorkflowLaunched.Show( message, ModalAlertType.Information );
+                }
+            }
+            else
+            {
+                mdWorkflowLaunched.Show( "Workflow Processing Error(s):<ul><li>" + workflowErrors.AsDelimited( "</li><li>" ) + "</li></ul>", ModalAlertType.Information );
+            }
+        }
+
+        #endregion Manual Workflows
 
         #region Request Grid
 
@@ -3840,6 +3971,8 @@ namespace RockWeb.Blocks.Connection
             var connectionOpportunityService = new ConnectionOpportunityService( rockContext );
             var query = connectionOpportunityService.Queryable()
                 .Include( co => co.ConnectionType.ConnectionStatuses )
+                .Include( co => co.ConnectionWorkflows )
+                .Include( co => co.ConnectionType.ConnectionWorkflows )
                 .AsNoTracking();
 
             _connectionOpportunity = ConnectionOpportunityId.HasValue ?

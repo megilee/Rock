@@ -683,8 +683,21 @@
 
                             </div>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <asp:Literal ID="lRequestModalViewModeMainDescription" runat="server" />
+                                </div>
+                                <div id="divRequestModalViewModeWorkflows" runat="server" class="col-md-6">
+                                    <Rock:ModalAlert ID="mdWorkflowLaunched" runat="server" />
+                                    <asp:Label ID="lblWorkflows" Text="Available Workflows" Font-Bold="true" runat="server" />
+                                    <div class="margin-b-lg">
+                                        <asp:Repeater ID="rptRequestWorkflows" runat="server" OnItemCommand="rptRequestWorkflows_ItemCommand">
+                                            <ItemTemplate>
+                                                <asp:LinkButton ID="lbRequestWorkflow" runat="server" CssClass="btn btn-default btn-xs" CommandArgument='<%# Eval("Id") %>' CommandName="LaunchWorkflow">
+                                                    <%# Eval("WorkflowType.Name") %>
+                                                </asp:LinkButton>
+                                            </ItemTemplate>
+                                        </asp:Repeater>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <asp:Panel ID="pnlRequestModalViewModeRequirements" runat="server">
