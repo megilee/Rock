@@ -713,7 +713,7 @@
                                         </asp:LinkButton>
                                     </div>
                                 </div>
-                                <Rock:Grid ID="gRequestModalViewModeActivities" runat="server" AllowPaging="false" DisplayType="Light" AllowSorting="false">
+                                <Rock:Grid ID="gRequestModalViewModeActivities" runat="server" AllowPaging="false" DisplayType="Light" AllowSorting="false" OnRowSelected="gRequestModalViewModeActivities_RowSelected">
                                     <Columns>
                                         <Rock:DateTimeField HeaderText="Date" DataField="Date" DataFormatString="{0:d}" />
                                         <Rock:RockBoundField DataField="ActivityMarkup" HeaderText="Activity" HtmlEncode="false" />

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
+using System.Linq.Dynamic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.UI;
@@ -346,6 +347,21 @@ namespace RockWeb.Blocks.Connection
         }
 
         /// <summary>
+        /// Gets or sets the current activity identifier.
+        /// </summary>
+        private int? CurrentActivityId
+        {
+            get
+            {
+                return ViewState["CurrentActivityId"].ToStringSafe().AsIntegerOrNull();
+            }
+            set
+            {
+                ViewState["CurrentActivityId"] = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the connection request identifier view all activities.
         /// </summary>
         private bool ViewAllActivities
@@ -430,7 +446,7 @@ namespace RockWeb.Blocks.Connection
             }
         }
         private const string RequestModalViewModeSubMode_View = "View";
-        private const string RequestModalViewModeSubMode_AddActivity = "AddActivity";
+        private const string RequestModalViewModeSubMode_AddEditActivity = "AddEditActivity";
         private const string RequestModalViewModeSubMode_Transfer = "Transfer";
         private const string RequestModalViewModeSubMode_TransferSearch = "TransferSearch";
 
@@ -791,8 +807,11 @@ namespace RockWeb.Blocks.Connection
             BindModalViewModeConnectorOptions();
 
             // Render the current view mode for the modal (activities grid or add activity form)
-            if ( RequestModalViewModeSubMode == RequestModalViewModeSubMode_AddActivity )
+            if ( RequestModalViewModeSubMode == RequestModalViewModeSubMode_AddEditActivity )
             {
+                var activity = GetCurrentActivity();
+                var connectorPersonAliasId = activity == null ? null : activity.ConnectorPersonAliasId;
+
                 divRequestModalViewModeAddActivityMode.Visible = true;
                 divRequestModalViewModeActivityGridMode.Visible = false;
                 divRequestModalViewModeTransferMode.Visible = false;
@@ -805,9 +824,16 @@ namespace RockWeb.Blocks.Connection
                     Text = at.Name
                 } ).ToList();
                 ddlRequestModalViewModeAddActivityModeType.DataBind();
-                BindConnectorOptions( ddlRequestModalViewModeAddActivityModeConnector, true, viewModel.CampusId );
-
+                BindConnectorOptions( ddlRequestModalViewModeAddActivityModeConnector, true, viewModel.CampusId, connectorPersonAliasId );
                 tbRequestModalViewModeAddActivityModeNote.Text = string.Empty;
+
+                // Bind edit mode if appropriate
+                if ( activity != null )
+                {
+                    tbRequestModalViewModeAddActivityModeNote.Text = activity.Note;
+                    ddlRequestModalViewModeAddActivityModeConnector.SelectedValue = connectorPersonAliasId.ToStringSafe();
+                    ddlRequestModalViewModeAddActivityModeType.SelectedValue = activity.ConnectionActivityTypeId.ToString();
+                }
             }
             else if ( RequestModalViewModeSubMode == RequestModalViewModeSubMode_View )
             {
@@ -1264,8 +1290,11 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void cpRequestModalAddEditModeCampus_SelectedIndexChanged( object sender, EventArgs e )
         {
+            var viewModel = GetConnectionRequestViewModel();
+            var connectorPersonAliasId = viewModel == null ? null : viewModel.ConnectorPersonAliasId;
+
             BindRequestModalAddEditModeGroups();
-            BindConnectorOptions( ddlRequestModalAddEditModeConnector, true, cpRequestModalAddEditModeCampus.SelectedCampusId );
+            BindConnectorOptions( ddlRequestModalAddEditModeConnector, true, cpRequestModalAddEditModeCampus.SelectedCampusId, connectorPersonAliasId );
         }
 
         /// <summary>
@@ -1549,8 +1578,9 @@ namespace RockWeb.Blocks.Connection
         {
             var viewModel = GetConnectionRequestViewModel();
             var campusId = viewModel != null ? viewModel.CampusId : CampusId;
+            var connectorPersonAliasId = viewModel == null ? null : viewModel.ConnectorPersonAliasId;
 
-            BindConnectorOptions( ddlRequestModalAddEditModeConnector, true, campusId );
+            BindConnectorOptions( ddlRequestModalAddEditModeConnector, true, campusId, connectorPersonAliasId );
             rblRequestModalAddEditModeState.BindToEnum<ConnectionState>();
 
             // Status
@@ -1848,6 +1878,18 @@ namespace RockWeb.Blocks.Connection
         #region Request Modal (View Mode) Activities Grid
 
         /// <summary>
+        /// Handles the RowSelected event of the gRequestModalViewModeActivities control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RowEventArgs"/> instance containing the event data.</param>
+        protected void gRequestModalViewModeActivities_RowSelected( object sender, RowEventArgs e )
+        {
+            CurrentActivityId = e.RowKeyId;
+            RequestModalViewModeSubMode = RequestModalViewModeSubMode_AddEditActivity;
+            ShowRequestModal();
+        }
+
+        /// <summary>
         /// Does the show transfer button.
         /// </summary>
         /// <returns></returns>
@@ -1913,7 +1955,8 @@ namespace RockWeb.Blocks.Connection
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void lbRequestModalViewModeAddActivity_Click( object sender, EventArgs e )
         {
-            RequestModalViewModeSubMode = RequestModalViewModeSubMode_AddActivity;
+            CurrentActivityId = null;
+            RequestModalViewModeSubMode = RequestModalViewModeSubMode_AddEditActivity;
             ShowRequestModal();
         }
 
@@ -1929,20 +1972,28 @@ namespace RockWeb.Blocks.Connection
                 return;
             }
 
+            var isAddMode = !CurrentActivityId.HasValue;
             var rockContext = new RockContext();
             var service = new ConnectionRequestActivityService( rockContext );
-            var activity = new ConnectionRequestActivity
+            var activity = isAddMode ? new ConnectionRequestActivity() : service.Get( CurrentActivityId.Value );
+
+            if ( activity == null )
             {
-                ConnectionRequestId = ConnectionRequestId.Value,
-                ConnectorPersonAliasId = ddlRequestModalViewModeAddActivityModeConnector.SelectedValue.AsIntegerOrNull(),
-                Note = tbRequestModalViewModeAddActivityModeNote.Text,
-                ConnectionActivityTypeId = ddlRequestModalViewModeAddActivityModeType.SelectedValue.AsInteger(),
-                ConnectionOpportunityId = ConnectionOpportunityId
-            };
+                return;
+            }
 
-            service.Add( activity );
+            activity.ConnectionRequestId = ConnectionRequestId.Value;
+            activity.ConnectorPersonAliasId = ddlRequestModalViewModeAddActivityModeConnector.SelectedValue.AsIntegerOrNull();
+            activity.Note = tbRequestModalViewModeAddActivityModeNote.Text;
+            activity.ConnectionActivityTypeId = ddlRequestModalViewModeAddActivityModeType.SelectedValue.AsInteger();
+            activity.ConnectionOpportunityId = ConnectionOpportunityId;
+
+            if ( isAddMode )
+            {
+                service.Add( activity );
+            }
+
             rockContext.SaveChanges();
-
             RequestModalViewModeSubMode = RequestModalViewModeSubMode_View;
             ShowRequestModal();
 
@@ -2344,7 +2395,7 @@ namespace RockWeb.Blocks.Connection
                     "Unassigned" );
             }
 
-            var connectorViewModels = GetConnectors( true, viewModel.CampusId )
+            var connectorViewModels = GetConnectors( true, viewModel.CampusId, null )
                 .Where( vm => vm.PersonAliasId != viewModel.ConnectorPersonAliasId )
                 .ToList();
 
@@ -2857,7 +2908,7 @@ namespace RockWeb.Blocks.Connection
         /// </summary>
         private void BindConnectorRepeater()
         {
-            var connectorViewModels = GetConnectors( false, CampusId );
+            var connectorViewModels = GetConnectors( false, CampusId, null );
 
             if ( !ConnectorPersonAliasId.HasValue )
             {
@@ -3189,11 +3240,12 @@ namespace RockWeb.Blocks.Connection
         /// <param name="ddl">The DDL.</param>
         /// <param name="includeCurrentPerson">if set to <c>true</c> [include current person].</param>
         /// <param name="campusId">The campus identifier.</param>
-        private void BindConnectorOptions( RockDropDownList ddl, bool includeCurrentPerson, int? campusId )
+        /// <param name="personAliasIdToInclude">The person alias identifier to include. This might be the current person alias id set on a record being edited</param>
+        private void BindConnectorOptions( RockDropDownList ddl, bool includeCurrentPerson, int? campusId, int? personAliasIdToInclude )
         {
             ddl.DataTextField = "Fullname";
             ddl.DataValueField = "PersonAliasId";
-            ddl.DataSource = GetConnectors( includeCurrentPerson, campusId );
+            ddl.DataSource = GetConnectors( includeCurrentPerson, campusId, personAliasIdToInclude );
             ddl.DataBind();
         }
 
@@ -3710,6 +3762,30 @@ namespace RockWeb.Blocks.Connection
         }
 
         /// <summary>
+        /// Gets the current activity.
+        /// </summary>
+        /// <returns></returns>
+        private ConnectionRequestActivity GetCurrentActivity()
+        {
+            if ( !CurrentActivityId.HasValue )
+            {
+                _connectionRequestActivity = null;
+                return null;
+            }
+
+            if ( _connectionRequestActivity != null && _connectionRequestActivity.Id == CurrentActivityId )
+            {
+                return _connectionRequestActivity;
+            }
+
+            var rockContext = new RockContext();
+            var service = new ConnectionRequestActivityService( rockContext );
+            _connectionRequestActivity = service.Get( CurrentActivityId.Value );
+            return _connectionRequestActivity;
+        }
+        private ConnectionRequestActivity _connectionRequestActivity = null;
+
+        /// <summary>
         /// Gets the connection request view model.
         /// </summary>
         /// <returns></returns>
@@ -3860,7 +3936,7 @@ namespace RockWeb.Blocks.Connection
         /// <param name="includeCurrentPerson">if set to <c>true</c> [include current person].</param>
         /// <param name="campusId">The campus identifier.</param>
         /// <returns></returns>
-        private List<ConnectorViewModel> GetConnectors( bool includeCurrentPerson, int? campusId )
+        private List<ConnectorViewModel> GetConnectors( bool includeCurrentPerson, int? campusId, int? personAliasIdToInclude )
         {
             var rockContext = new RockContext();
             var service = new ConnectionOpportunityConnectorGroupService( rockContext );
@@ -3890,6 +3966,22 @@ namespace RockWeb.Blocks.Connection
                     NickName = CurrentPerson.NickName,
                     PersonAliasId = CurrentPersonAliasId.Value
                 } );
+            }
+
+            if ( personAliasIdToInclude.HasValue && !connectors.Any( c => c.PersonAliasId == personAliasIdToInclude ) )
+            {
+                var personAliasService = new PersonAliasService( rockContext );
+                var person = personAliasService.GetPerson( personAliasIdToInclude.Value );
+
+                if ( person != null )
+                {
+                    connectors.Add( new ConnectorViewModel
+                    {
+                        LastName = person.LastName,
+                        NickName = person.NickName,
+                        PersonAliasId = personAliasIdToInclude.Value
+                    } );
+                }
             }
 
             return connectors.OrderBy( c => c.LastName ).ThenBy( c => c.NickName ).ThenBy( c => c.PersonAliasId ).ToList();
@@ -4105,7 +4197,9 @@ namespace RockWeb.Blocks.Connection
 
             return service.Queryable()
                 .AsNoTracking()
-                .Where( at => at.ConnectionTypeId == connectionType.Id );
+                .Where( at =>
+                    !at.ConnectionTypeId.HasValue ||
+                    at.ConnectionTypeId == connectionType.Id );
         }
 
         /// <summary>
