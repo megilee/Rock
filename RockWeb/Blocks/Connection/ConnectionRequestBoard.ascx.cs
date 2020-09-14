@@ -3973,7 +3973,9 @@ namespace RockWeb.Blocks.Connection
                 .Include( co => co.ConnectionType.ConnectionStatuses )
                 .Include( co => co.ConnectionWorkflows )
                 .Include( co => co.ConnectionType.ConnectionWorkflows )
-                .AsNoTracking();
+                .AsNoTracking()
+                .OrderBy( co => co.PublicName )
+                .ThenBy( co => co.Id );
 
             _connectionOpportunity = ConnectionOpportunityId.HasValue ?
                 query.FirstOrDefault( co => co.Id == ConnectionOpportunityId.Value ) :
