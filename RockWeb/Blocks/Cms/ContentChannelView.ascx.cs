@@ -1414,7 +1414,15 @@ $(document).ready(function() {
                             var selection = new List<string>();
                             selection.Add( entityField.UniqueName );
 
-                            // use the default comparison type that this property/attribute's field type uses.
+                            /* 2020-09-11 MDP
+                             * We'll get a list of the supported comparison types of the Field (each Rock.Field.IField has a property that defines which comparison types it supports).
+                             * - In DataViewDetail this would determine what type of Comparison Control to use (Drop Down, just the word 'is', etc). In the case of a DropDown, the first
+                             * one in the drop down is the default comparison type.
+                             * - In DynamicReport, the Comparison control is not visible, so that always ends up using the default comparison type of that IFieldType.
+                             * 
+                             * So for ContentChannelView, we'll use the exact same way to determine the Comparison type (use the first/default comparison type that the field type supports.
+                             */
+
                             var supportedComparisonTypes = entityField.FieldType.Field.FilterComparisonType;
                             ComparisonType defaultComparisonType = ComparisonType.EqualTo;
                             foreach ( ComparisonType comparisonType in typeof( ComparisonType ).GetOrderedValues<ComparisonType>() )
