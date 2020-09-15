@@ -3561,6 +3561,9 @@ namespace RockWeb.Blocks.Connection
 
             // Icon template in the header on the right
             FollowingsHelper.SetFollowing( connectionOpportunity, pnlFollowing, CurrentPerson );
+
+            // Config gear can only be seen by people with rights to do admin
+            lbConfig.Visible = UserCanAdministrate;
         }
 
         #endregion UI Bindings
