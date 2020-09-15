@@ -376,9 +376,13 @@
                 $("#<%=ddlRequestModalViewModeTransferModeOpportunityConnector.ClientID%>").toggle(selectedOptionIsSelectConnector);
             };
 
-        $("#<%= upnlRoot.ClientID %> .js-transfer-connector").on("click", syncTransferConnectorControls);
+        $('#<%= upnlRoot.ClientID %> .js-transfer-connector').on('click', syncTransferConnectorControls);
         syncTransferConnectorControls();
     });
+
+    const toggleFilterDrawer = function () {
+        $('#<%= divFilterDrawer.ClientID %>').slideToggle();
+    };
 </script>
 
 <asp:UpdatePanel ID="upnlRoot" runat="server" UpdateMode="Conditional">
@@ -505,7 +509,7 @@
                                         </asp:Repeater>
                                     </ul>
                                 </div>
-                                <a href ="javascript:void(0);" onclick="$('#<%= divFilterDrawer.ClientID %>').slideToggle()" class="btn btn-xs">
+                                <a ID="aFilterDrawerToggle" runat="server" href="javascript:toggleFilterDrawer()" class="btn btn-xs">
                                     <i class="fa fa-filter"></i>
                                     Filters
                                 </a>

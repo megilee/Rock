@@ -3088,6 +3088,23 @@ namespace RockWeb.Blocks.Connection
             {
                 ppRequesterFilter.SetValue( null );
             }
+
+            var hasFilter =
+                ppRequesterFilter.PersonAliasId.HasValue ||
+                !cblLastActivityFilter.SelectedValue.IsNullOrWhiteSpace() ||
+                !cblStateFilter.SelectedValue.IsNullOrWhiteSpace() ||
+                !cblStatusFilter.SelectedValue.IsNullOrWhiteSpace() ||
+                sdrpLastActivityDateRangeFilter.SelectedDateRange.Start.HasValue ||
+                sdrpLastActivityDateRangeFilter.SelectedDateRange.End.HasValue;
+
+            if ( hasFilter )
+            {
+                aFilterDrawerToggle.AddCssClass( "bg-warning" );
+            }
+            else
+            {
+                aFilterDrawerToggle.RemoveCssClass( "bg-warning" );
+            }
         }
 
         /// <summary>
