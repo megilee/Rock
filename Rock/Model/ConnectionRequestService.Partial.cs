@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using Rock.Data;
+using Rock.Security;
 using Rock.Web.Cache;
 
 namespace Rock.Model
@@ -145,6 +146,7 @@ namespace Rock.Model
         {
             var rockContext = Context as RockContext;
             var connectionOpportunityService = new ConnectionOpportunityService( rockContext );
+            var personAliasService = new PersonAliasService( rockContext );
 
             var connectionOpportunity = connectionOpportunityService.Queryable()
                 .AsNoTracking()
@@ -159,6 +161,9 @@ namespace Rock.Model
                 throw new ArgumentException( "The connection type did not resolve" );
             }
 
+            var currentPerson = personAliasService.GetPerson( currentPersonAliasId );
+
+            // Begin querying for requests
             var connectionRequestViewModelQuery = GetConnectionRequestViewModelQuery(
                 currentPersonAliasId,
                 connectionOpportunityId,
@@ -171,6 +176,22 @@ namespace Rock.Model
                 connectionStates,
                 lastActivityTypeIds,
                 sortProperty );
+
+            // Check and apply security
+            var canViewAllRequests = currentPerson != null && connectionOpportunity.IsAuthorized( Authorization.VIEW, currentPerson );
+            var canViewAssignedRequests = connectionType.EnableRequestSecurity;
+
+            if ( !canViewAllRequests )
+            {
+                if ( canViewAssignedRequests )
+                {
+                    connectionRequestViewModelQuery = connectionRequestViewModelQuery.Where( r => r.ConnectorPersonAliasId == currentPersonAliasId );
+                }
+                else
+                {
+                    connectionRequestViewModelQuery = connectionRequestViewModelQuery.Where( r => false );
+                }
+            }
 
             var connectionStatusQuery = GetConnectionStatusQuery( connectionOpportunityId )
                 .Select( cs => new ConnectionStatusViewModel

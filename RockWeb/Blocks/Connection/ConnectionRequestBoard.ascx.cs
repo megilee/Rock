@@ -744,8 +744,9 @@ namespace RockWeb.Blocks.Connection
         {
             mdRequest.Footer.Visible = false;
             var viewModel = GetConnectionRequestViewModel();
+            var connectionRequest = GetConnectionRequest();
 
-            if ( viewModel == null )
+            if ( viewModel == null || connectionRequest == null )
             {
                 return;
             }
@@ -805,6 +806,9 @@ namespace RockWeb.Blocks.Connection
 
             // Manual workflows
             BindManualWorkflows();
+
+            // Attributes
+            avcRequestModalViewModeAttributesReadOnly.AddDisplayControls( connectionRequest, Authorization.VIEW, CurrentPerson );
 
             // Bind the connectors button dropdown
             BindModalViewModeConnectorOptions();
@@ -1112,7 +1116,7 @@ namespace RockWeb.Blocks.Connection
             rockContext.SaveChanges();
 
             connectionRequest.LoadAttributes( rockContext );
-            avcRequestModalAddEditMode.GetEditValues( connectionRequest );
+            avcRequestModalAddEditModeRequest.GetEditValues( connectionRequest );
             connectionRequest.SaveAttributeValues( rockContext );
 
             // Add an activity that the connector was assigned (or changed)
@@ -1524,10 +1528,24 @@ namespace RockWeb.Blocks.Connection
             };
 
             groupMember.LoadAttributes();
-            avcRequestModalAddEditMode.ExcludedAttributes = groupMember.Attributes.Values
+            var request = GetConnectionRequest();
+
+            if ( request != null && !request.AssignedGroupMemberAttributeValues.IsNullOrWhiteSpace() )
+            {
+                var savedValues = JsonConvert.DeserializeObject<Dictionary<string, string>>( request.AssignedGroupMemberAttributeValues );
+                if ( savedValues != null )
+                {
+                    foreach ( var item in savedValues )
+                    {
+                        groupMember.SetAttributeValue( item.Key, item.Value );
+                    }
+                }
+            }
+
+            avcRequestModalAddEditModeGroupMember.ExcludedAttributes = groupMember.Attributes.Values
                 .Where( a => a.Key == "Order" || a.Key == "Active" )
                 .ToArray();
-            avcRequestModalAddEditMode.AddEditControls( groupMember, true );
+            avcRequestModalAddEditModeGroupMember.AddEditControls( groupMember, true );
         }
 
         /// <summary>
@@ -1555,7 +1573,7 @@ namespace RockWeb.Blocks.Connection
             };
 
             groupMember.LoadAttributes();
-            avcRequestModalAddEditMode.GetEditValues( groupMember );
+            avcRequestModalAddEditModeGroupMember.GetEditValues( groupMember );
 
             foreach ( var attrValue in groupMember.AttributeValues )
             {
@@ -1653,6 +1671,17 @@ namespace RockWeb.Blocks.Connection
             SyncRequestModalAddEditModeFollowUp();
             cpRequestModalAddEditModeCampus.SelectedCampusId = campusId;
             BindRequestModalAddEditModeGroups();
+
+            // Request attributes
+            var request = GetConnectionRequest() ?? new ConnectionRequest {
+                ConnectionOpportunityId = ConnectionOpportunityId.Value
+            };
+
+            request.LoadAttributes();
+            avcRequestModalAddEditModeRequest.ExcludedAttributes = request.Attributes.Values
+                .Where( a => a.Key == "Order" || a.Key == "Active" )
+                .ToArray();
+            avcRequestModalAddEditModeRequest.AddEditControls( request, true );
         }
 
         #endregion Add Request Modal
@@ -2061,8 +2090,12 @@ namespace RockWeb.Blocks.Connection
             {
                 var cellCount = e.Row.Cells.Count;
                 var lastCell = e.Row.Cells[cellCount - 1];
-                var lbDelete = lastCell.Controls[0] as LinkButton;
-                lbDelete.Enabled = false;
+                var lbDelete = (lastCell.Controls.Count > 0 ? lastCell.Controls[0] : null) as LinkButton;
+
+                if ( lbDelete != null )
+                {
+                    lbDelete.Enabled = false;
+                }
             }
         }
 
@@ -4013,6 +4046,31 @@ namespace RockWeb.Blocks.Connection
             return _connectionRequestViewModel;
         }
         private ConnectionRequestViewModel _connectionRequestViewModel = null;
+
+        /// <summary>
+        /// Gets the connection request.
+        /// </summary>
+        /// <returns></returns>
+        private ConnectionRequest GetConnectionRequest()
+        {
+            // Do not make a db call if the id and current record are in sync
+            if ( _connectionRequest != null && _connectionRequest.Id == ConnectionRequestId )
+            {
+                return _connectionRequest;
+            }
+
+            if ( !ConnectionRequestId.HasValue )
+            {
+                _connectionRequest = null;
+                return _connectionRequest;
+            }
+
+            var rockContext = new RockContext();
+            var connectionRequestService = new ConnectionRequestService( rockContext );
+            _connectionRequest = connectionRequestService.Get( ConnectionRequestId.Value );
+            return _connectionRequest;
+        }
+        private ConnectionRequest _connectionRequest = null;
 
         /// <summary>
         /// Gets the type of the connection.

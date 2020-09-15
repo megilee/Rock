@@ -686,6 +686,9 @@
                                 <div class="col-md-12">
                                     <asp:Literal ID="lRequestModalViewModeMainDescription" runat="server" />
                                 </div>
+                                <div class="col-md-12">
+                                    <Rock:AttributeValuesContainer ID="avcRequestModalViewModeAttributesReadOnly" runat="server" DisplayAsTabs="true" NumberOfColumns="2" />
+                                </div>
                                 <div id="divRequestModalViewModeWorkflows" runat="server" class="col-md-6">
                                     <Rock:ModalAlert ID="mdWorkflowLaunched" runat="server" />
                                     <asp:Label ID="lblWorkflows" Text="Available Workflows" Font-Bold="true" runat="server" />
@@ -843,7 +846,8 @@
                                 </div>
                             </div>
 
-                            <Rock:AttributeValuesContainer ID="avcRequestModalAddEditMode" runat="server" NumberOfColumns="2" />
+                            <Rock:AttributeValuesContainer ID="avcRequestModalAddEditModeRequest" runat="server" NumberOfColumns="2" />
+                            <Rock:AttributeValuesContainer ID="avcRequestModalAddEditModeGroupMember" runat="server" NumberOfColumns="2" />
 
                             <div class="actions text-right">
                                 <asp:LinkButton ID="lbRequestModalAddEditModeSave" runat="server" AccessKey="s" ToolTip="Alt+s" Text="Save" CssClass="btn btn-primary" OnClick="lbRequestModalAddEditModeSave_Click" />
