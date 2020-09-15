@@ -161,8 +161,6 @@ namespace Rock.Model
                 throw new ArgumentException( "The connection type did not resolve" );
             }
 
-            var currentPerson = personAliasService.GetPerson( currentPersonAliasId );
-
             // Begin querying for requests
             var connectionRequestViewModelQuery = GetConnectionRequestViewModelQuery(
                 currentPersonAliasId,
@@ -178,19 +176,29 @@ namespace Rock.Model
                 sortProperty );
 
             // Check and apply security
+            var currentPerson = personAliasService.GetPerson( currentPersonAliasId );
             var canViewAllRequests = currentPerson != null && connectionOpportunity.IsAuthorized( Authorization.VIEW, currentPerson );
             var canViewAssignedRequests = connectionType.EnableRequestSecurity;
 
             if ( !canViewAllRequests )
             {
-                if ( canViewAssignedRequests )
-                {
-                    connectionRequestViewModelQuery = connectionRequestViewModelQuery.Where( r => r.ConnectorPersonAliasId == currentPersonAliasId );
-                }
-                else
-                {
-                    connectionRequestViewModelQuery = connectionRequestViewModelQuery.Where( r => false );
-                }
+                // There are some scenarios where the current person can see the request even if the permissions say otherwise:
+                // 1) The person is in a global (no campus) connector group
+                // 2) The person is in the campus specific connector group
+                // 3) The person is assigned to the request and the connection type has EnableRequestSecurity
+                var currentPersonId = currentPerson?.Id;
+                var connectionOpportunityConnectorGroupService = new ConnectionOpportunityConnectorGroupService( rockContext );
+                var campusIdQuery = connectionOpportunityConnectorGroupService.Queryable()
+                    .AsNoTracking()
+                    .Where( cocg =>
+                        cocg.ConnectionOpportunityId == connectionOpportunityId &&
+                        cocg.ConnectorGroup.Members.Any( m => m.PersonId == currentPersonId ) )
+                    .Select( cocg => cocg.CampusId );
+
+                connectionRequestViewModelQuery = connectionRequestViewModelQuery.Where( r =>
+                    campusIdQuery.Contains( null ) || // Global campus connector
+                    campusIdQuery.Contains( r.CampusId ) || // In a connector group of the appropriate campus
+                    ( canViewAssignedRequests && r.ConnectorPersonAliasId == currentPersonAliasId ) ); // Is the connector and EnableRequestSecurity
             }
 
             var connectionStatusQuery = GetConnectionStatusQuery( connectionOpportunityId )
